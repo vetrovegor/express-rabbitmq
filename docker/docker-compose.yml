@@ -1,0 +1,31 @@
+version: '3'
+
+services:
+  rabbitmq:
+    image: rabbitmq
+    ports:
+      - "5672:5672"
+
+  auth-db:
+    image: mongo
+    container_name: auth-db
+    volumes:
+      - ./auth-db:/data/db
+    ports:
+      - "27017:27017"
+
+  product-db:
+    image: mongo
+    container_name: product-db
+    volumes:
+      - ./product-db:/data/db
+    ports:
+      - "27018:27017"
+
+  order-db:
+    image: mongo
+    container_name: order-db
+    volumes:
+      - ./order-db:/data/db
+    ports:
+      - "27019:27017"
