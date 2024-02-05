@@ -9,6 +9,12 @@ const app = express();
 
 app.use(express.json());
 
+app.get('/', async (req, res) => {
+    const products = await Product.find();
+
+    res.json(products);
+});
+
 app.post('/', authMiddleware, async (req, res) => {
     try {
         const { name, description, price } = req.body;
@@ -54,6 +60,8 @@ app.post("/buy", authMiddleware, async (req, res) => {
             })
         };
 
+        const { queue } = await channel.assertQueue('', { exclusive: true });
+
         channel.sendToQueue(
             "ORDER",
             Buffer.from(
@@ -61,18 +69,19 @@ app.post("/buy", authMiddleware, async (req, res) => {
                     products,
                     userNickname: req.user.nickname,
                 })
-            )
-        );
-
-        let order;
-
-        await channel.consume("PRODUCT", (data) => {
-            console.log("Consuming PRODUCT service");
-            channel.ack(data);
-            order = JSON.parse(data.content);
+            ), {
+            replyTo: queue
         });
 
-        return res.json(order);
+        const data = await new Promise((resolve) => {
+            channel.consume(queue, (msg) => {
+                channel.ack(msg);
+                const data = JSON.parse(msg.content);
+                resolve(data);
+            });
+        });
+        
+        res.json(data);
     } catch (error) {
         return res.status(500).json({
             statusCode: 500,

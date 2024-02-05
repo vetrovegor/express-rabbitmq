@@ -40,13 +40,13 @@ const start = async () => {
 
     await channel.assertQueue("ORDER");
     
-    channel.consume("ORDER", (data) => {
+    channel.consume("ORDER", (msg) => {
         console.log("Consuming ORDER service");
-        channel.ack(data);
-        const { products, userNickname } = JSON.parse(data.content);
+        channel.ack(msg);
+        const { products, userNickname } = JSON.parse(msg.content);
         const order = createOrder(products, userNickname);
         channel.sendToQueue(
-            "PRODUCT",
+            msg.properties.replyTo,
             Buffer.from(JSON.stringify({ order }))
         );
     });
